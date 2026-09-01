@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [20, 22]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+  smoke:
+    # The build passing says nothing about whether the server actually starts
+    # and lists its tools, which is the failure a user would actually hit.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Server starts and lists every tool
+        run: |
+          printf '%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | node dist/index.js 2>/dev/null \
+            | node -e '
+              let raw = "";
+              process.stdin.on("data", c => raw += c);
+              process.stdin.on("end", () => {
+                const listed = raw.trim().split("\n").map(l => JSON.parse(l)).find(m => m.id === 2);
+                const tools = listed?.result?.tools ?? [];
+                console.log(`tools: ${tools.length}`);
+                if (tools.length !== 16) {
+                  console.error(`expected 16 tools, got ${tools.length}`);
+                  process.exit(1);
+                }
+                const unannotated = tools.filter(t => t.annotations?.readOnlyHint === undefined);
+                if (unannotated.length) {
+                  console.error("unannotated: " + unannotated.map(t => t.name).join(", "));
+                  process.exit(1);
+                }
+              });
+            '
+
+      - name: Read-only mode hides every write
+        env:
+          YOUTUBE_READ_ONLY: "1"
+        run: |
+          printf '%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | node dist/index.js 2>/dev/null \
+            | node -e '
+              let raw = "";
+              process.stdin.on("data", c => raw += c);
+              process.stdin.on("end", () => {
+                const listed = raw.trim().split("\n").map(l => JSON.parse(l)).find(m => m.id === 2);
+                const writes = listed.result.tools.filter(t => !t.annotations.readOnlyHint);
+                if (writes.length) {
+                  console.error("writes exposed in read-only mode: " + writes.map(t => t.name).join(", "));
+                  process.exit(1);
+                }
+                console.log(`read-only tools: ${listed.result.tools.length}`);
+              });
+            '
+
+      - name: Transcripts work with no credentials
+        run: |
+          pipx install yt-dlp || pip install --user yt-dlp
+          printf '%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_transcript_languages","arguments":{"video":"dQw4w9WgXcQ"}}}' \
+            | node dist/index.js 2>/dev/null \
+            | node -e '
+              let raw = "";
+              process.stdin.on("data", c => raw += c);
+              process.stdin.on("end", () => {
+                const called = raw.trim().split("\n").map(l => JSON.parse(l)).find(m => m.id === 2);
+                const text = called?.result?.content?.[0]?.text ?? "";
+                if (!/\ben\b/.test(text)) {
+                  console.error("unconfigured transcript read failed:\n" + text);
+                  process.exit(1);
+                }
+                console.log("transcript read ok");
+              });
+            '
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t youtube-mcp:ci .
