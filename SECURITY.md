@@ -47,3 +47,12 @@ Video descriptions, titles and comments are written by other people and can
 contain text engineered to look like instructions to a model. Tool descriptions
 and the shipped `SKILL.md` tell the model to treat that content as data. Keep
 that in mind when wiring this into anything that runs unattended.
+
+## Good-faith research
+
+Look at whatever you like in this repository. When testing, please do not access,
+change or delete data that is not yours, and do not disrupt a service other
+people depend on. If a test could affect anyone else, stop and send a private
+report first.
+
+Research done in that spirit is welcome, and nothing here is a trap.
