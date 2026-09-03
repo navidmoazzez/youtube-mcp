@@ -35,7 +35,7 @@ Options.
   YOUTUBE_TRANSCRIPT_LANG       default transcript language, default en
   YOUTUBE_YTDLP_PATH            path to yt-dlp if it is not on PATH
 
-https://github.com/navidmoazzez/youtube-mcp
+https://github.com/thenavidm/youtube-mcp
 `;
 
 async function main(): Promise<void> {

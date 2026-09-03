@@ -445,7 +445,7 @@ the Cloud project removes the API key and the OAuth client together.
 
 ## Questions
 
-Run into a problem or have a question? [Open an issue](https://github.com/navidmoazzez/youtube-mcp/issues) and I will help.
+Run into a problem or have a question? [Open an issue](https://github.com/thenavidm/youtube-mcp/issues) and I will help.
 
 ## About the author 👋
 

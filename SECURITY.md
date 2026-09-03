@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report it privately through
-[GitHub security advisories](https://github.com/navidmoazzez/youtube-mcp/security/advisories/new),
+[GitHub security advisories](https://github.com/thenavidm/youtube-mcp/security/advisories/new),
 not as a public issue.
 
 ## What this server holds
