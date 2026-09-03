@@ -1,4 +1,6 @@
-# Setting up Google credentials
+# Install
+
+## Setting up Google credentials
 
 This is the long version. The README has the short one.
 

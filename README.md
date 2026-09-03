@@ -139,7 +139,7 @@ Then connect each channel:
 A browser opens, you pick the channel, and the refresh token is printed in your
 terminal. Run it once per channel, picking a different one each time.
 
-[references/setup.md](./references/setup.md) has the long version, including
+[INSTALL.md](./INSTALL.md) has the long version, including
 every failure worth knowing about in advance.
 
 ## 4. Connect your client 🔌
